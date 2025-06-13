@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import gameengine.PhysicsObject;
 import gameengine.graphics.MyGraphics;
 import gameengine.hitbox.RectHitbox;
+import gameengine.maths.Vector2D;
 import gamelogic.Main;
 import gamelogic.level.Level;
 import gamelogic.tiles.Tile;
@@ -21,6 +22,10 @@ public class Player extends PhysicsObject{
 		super(x, y, level.getLevelData().getTileSize(), level.getLevelData().getTileSize(), level);
 		int offset =(int)(level.getLevelData().getTileSize()*0.1); //hitbox is offset by 10% of the player size.
 		this.hitbox = new RectHitbox(this, offset,offset, width -offset, height - offset);
+	}
+
+	public Vector2D getMovement(){
+		return movementVector;
 	}
 
 	@Override

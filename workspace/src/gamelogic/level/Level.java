@@ -11,6 +11,7 @@ import gameengine.loaders.Tileset;
 import gamelogic.GameResources;
 import gamelogic.Main;
 import gamelogic.enemies.Enemy;
+import gamelogic.player.MiniPlayer;
 import gamelogic.player.Player;
 import gamelogic.tiledMap.Map;
 import gamelogic.tiles.Flag;
@@ -20,6 +21,7 @@ import gamelogic.tiles.SolidTile;
 import gamelogic.tiles.Spikes;
 import gamelogic.tiles.Tile;
 import gamelogic.tiles.Water;
+import gamelogic.tiles.Mini;
 
 public class Level {
 
@@ -35,6 +37,8 @@ public class Level {
 
 	private ArrayList<Enemy> enemiesList = new ArrayList<>();
 	private ArrayList<Flower> flowers = new ArrayList<>();
+	private ArrayList<Water> waters = new ArrayList<>();
+	private ArrayList<Gas> gases = new ArrayList<>();
 
 	private List<PlayerDieListener> dieListeners = new ArrayList<>();
 	private List<PlayerWinListener> winListeners = new ArrayList<>();
@@ -104,20 +108,36 @@ public class Level {
 					tiles[x][y] = new SolidTile(xPosition, yPosition, tileSize, tileset.getImage("Solid_up"), this);
 				else if (values[x][y] == 14)
 					tiles[x][y] = new SolidTile(xPosition, yPosition, tileSize, tileset.getImage("Solid_middle"), this);
-				else if (values[x][y] == 15)
+				else if (values[x][y] == 15) {
 					tiles[x][y] = new Gas(xPosition, yPosition, tileSize, tileset.getImage("GasOne"), this, 1);
-				else if (values[x][y] == 16)
+					gases.add((Gas)tiles[x][y]);
+				}
+				else if (values[x][y] == 16) {
 					tiles[x][y] = new Gas(xPosition, yPosition, tileSize, tileset.getImage("GasTwo"), this, 2);
-				else if (values[x][y] == 17)
+					gases.add((Gas)tiles[x][y]);
+				}
+				else if (values[x][y] == 17){
 					tiles[x][y] = new Gas(xPosition, yPosition, tileSize, tileset.getImage("GasThree"), this, 3);
-				else if (values[x][y] == 18)
+					gases.add((Gas)tiles[x][y]);
+				}
+				else if (values[x][y] == 18) {
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Falling_water"), this, 0);
-				else if (values[x][y] == 19)
+					waters.add((Water)tiles[x][y]);
+				}
+				else if (values[x][y] == 19) {
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Full_water"), this, 3);
-				else if (values[x][y] == 20)
+
+				}
+				else if (values[x][y] == 20) {
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Half_water"), this, 2);
-				else if (values[x][y] == 21)
+
+				}
+				else if (values[x][y] == 21) {
 					tiles[x][y] = new Water(xPosition, yPosition, tileSize, tileset.getImage("Quarter_water"), this, 1);
+
+				} else if (values[x][y] == 22) {
+				
+				}
 			}
 
 		}
@@ -175,6 +195,31 @@ public class Level {
 					i--;
 				}
 			}
+			boolean touchedWater = false;
+			for(Water w: waters) {
+				if((w.getFullness() == 0 )&& w.getHitbox().isIntersecting(player.getHitbox())){
+					touchedWater = true;
+				}
+			}
+			if(touchedWater){
+				player.getMovement().y -= (GRAVITY)*0.25;
+				player.jumpPower = 1350;
+			} else {
+				GRAVITY = 70;
+			}
+			
+			boolean touchedGas = false;
+			for(Gas g: gases) {
+				if(g.getHitbox().isIntersecting(player.getHitbox())){
+					touchedGas = true;
+				}
+			}
+			if(touchedGas){
+				GRAVITY = -70;
+				player.getMovement().y -= (GRAVITY)*0.05;
+			} else {
+				GRAVITY = 70;
+			}
 
 			// Update the enemies
 			for (int i = 0; i < enemies.length; i++) {
@@ -191,19 +236,6 @@ public class Level {
 			camera.update(tslf);
 		}
 	}
-	
-	private void addGas(int col, int row, Map map, int numSquaresToFill, ArrayList<Gas> placedThisRound) {
-		Gas g = new Gas (col, row, tileSize, tileset.getImage("GasOne"), this, 0);
-		map.addTile(col, row, g);
-		numSquaresToFill--;
-		placedThisRound.add(g);
-
-		while(placedThisRound.size() > 0 && numSquaresToFill >= 0){
-			//draw the desired pattern starting at the location
-			//of the tile in placedThisRound.get(0)
-			//be sure to add each tile you draw to placedThisRound
-		}
-	}	
 
 	//#############################################################################################################
 	//Your code goes here! 
@@ -213,18 +245,25 @@ public class Level {
 		String waterHeight = "";
 		if(fullness == 0){
 			waterHeight = "Falling_water";
+			
 		}
 		else if(fullness == 1){
 			waterHeight = "Quarter_water";
+		
 		}
 		else if(fullness == 2){
 			waterHeight = "Half_water";
+			
 		}
 		else if(fullness == 3){
 			waterHeight = "Full_water";
+			
 		}
 		Water w = new Water (col, row, tileSize, tileset.getImage(waterHeight), this, fullness);
 		map.addTile(col, row, w);
+		waters.add(w);
+		
+
 
         //check if we can go down
 		if(row + 1 < map.getTiles()[0].length && !map.getTiles()[col][row + 1].isSolid()){
@@ -258,6 +297,38 @@ public class Level {
 		}
 	}
 
+	//Adds gas tiles until the requisite number of squares are filled or there is no more room 
+	//precondition: numSquaresToFill is greater than zero, there is a gas flower on the map
+	//postcondition: creates gas surrounding where the flower was, changes based on objects surrounding it
+	private void addGas(int col, int row, Map map, int numSquaresToFill, ArrayList<Gas> placedThisRound) {
+		Gas g = new Gas(col, row, tileSize, tileset.getImage("GasOne"), this, 0);
+		map.addTile(col, row, g);
+		placedThisRound.add(g);
+		numSquaresToFill--;
+		
+		while(numSquaresToFill > 0 && placedThisRound.size() > 0){
+			row = placedThisRound.get(0).getRow();
+			col = placedThisRound.get(0).getCol();
+			placedThisRound.remove(0);
+			for(int r = row - 1; r < row + 2; r++) {
+				for(int c = col; c > col - 2; c -= 2) {
+					if(c < map.getTiles().length && r < map.getTiles()[c].length && c >= 0 && r >= 0 && !map.getTiles()[c][r].isSolid() && !(map.getTiles()[c][r] instanceof Gas)){
+						g = new Gas(c, r, tileSize, tileset.getImage("GasOne"), this, 0);
+						map.addTile(c, r, g);
+						placedThisRound.add(g);  
+						numSquaresToFill--;
+					}
+					if(c == col){
+						c += 3;
+					}
+				}
+			}
+		}
+	}
+	
+	private void addMini(int col, int row, Map map){
+
+	}
 
 	public void draw(Graphics g) {
 	   	 g.translate((int) -camera.getX(), (int) -camera.getY());
