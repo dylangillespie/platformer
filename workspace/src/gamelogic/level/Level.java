@@ -240,6 +240,8 @@ public class Level {
 	//#############################################################################################################
 	//Your code goes here! 
 	//Please make sure you read the rubric/directions carefully and implement the solution recursively!
+	//precondition: make sure there is a water flower on the map to be hit
+	//postcondition: water will form staring from a full block and eventually getting smaller in both directions, the water will fall when it is in the air, will be stopped by objects
 	private void water(int col, int row, Map map, int fullness) {
 		//make water (You’ll need modify this to make different kinds of water such as half water and quarter water)
 		String waterHeight = "";
